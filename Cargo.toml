@@ -3,7 +3,9 @@ name = "cursive-spreadsheet-view"
 version = "0.1.0"
 authors = ["Mark LeMoine <linclelinkpart5@gmail.com>"]
 edition = "2018"
+description = "A spreadsheet-like view component for `cursive`."
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+cursive = { version = "0.14", default-features = false }
