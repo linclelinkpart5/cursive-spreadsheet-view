@@ -1,48 +1,69 @@
 use std::cmp::Ordering;
+use std::collections::HashMap;
+use std::collections::HashSet;
 use std::rc::Rc;
 
 use cursive::Cursive;
 use cursive::vec::Vec2;
 use cursive::view::ScrollBase;
 
-pub type ColumnKey = str;
 
-/// A trait for displaying and sorting items inside a `TableView`.
-pub trait SheetViewItem: Clone + Sized {
-    /// Method returning a string representation of the item for the
-    /// specified column.
-    fn to_column(&self, column: &ColumnKey) -> String;
-
-    /// Method comparing two items via their specified column.
-    fn cmp(&self, other: &Self, column: &ColumnKey) -> Ordering;
+pub struct ColumnDef {
+    pub key: String,
+    pub display: String,
 }
 
 /// Callback for when a column is sorted. Takes the column and ordering as input.
-type OnSortCallback = Rc<dyn Fn(&mut Cursive, &ColumnKey, Ordering)>;
+type OnSortCallback = Rc<dyn Fn(&mut Cursive, &str, Ordering)>;
 
 /// Callback taking as argument the row and the index of an element.
 type IndexCallback = Rc<dyn Fn(&mut Cursive, usize, usize)>;
 
-pub struct SpreadsheetView<T: SheetViewItem> {
+pub struct SpreadsheetView {
+    columns: Vec<ColumnDef>,
+    records: Vec<HashMap<String, String>>,
+
     enabled: bool,
-    scrollbase: ScrollBase,
+    scroll_base: ScrollBase,
     last_size: Vec2,
+    read_only: bool,
 
+    selected_cells: HashSet<(usize, usize)>,
     column_select: bool,
-    // columns: Vec<TableColumn<H>>,
-    // column_indicies: HashMap<H, usize>,
-
-    focus: usize,
-    items: Vec<T>,
-    rows_to_items: Vec<usize>,
 
     on_sort: Option<OnSortCallback>,
-    // TODO Pass drawing offsets into the handlers so a popup menu
-    // can be created easily?
     on_submit: Option<IndexCallback>,
     on_select: Option<IndexCallback>,
 }
 
+impl Default for SpreadsheetView {
+    /// Creates a new empty `SpreadsheetView` without any columns.
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl SpreadsheetView {
+    /// Creates a new empty `SpreadsheetView` without any columns.
+    pub fn new() -> Self {
+        Self {
+            columns: Vec::new(),
+            records: Vec::new(),
+
+            enabled: true,
+            scroll_base: ScrollBase::new(),
+            last_size: Vec2::new(0, 0),
+            read_only: true,
+
+            selected_cells: HashSet::new(),
+            column_select: false,
+
+            on_sort: None,
+            on_submit: None,
+            on_select: None,
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {}
