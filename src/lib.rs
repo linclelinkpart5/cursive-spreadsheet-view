@@ -3,15 +3,12 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::rc::Rc;
 
+use indexmap::IndexMap;
+
 use cursive::Cursive;
 use cursive::vec::Vec2;
 use cursive::view::ScrollBase;
 
-
-pub struct ColumnDef {
-    pub key: String,
-    pub display: String,
-}
 
 /// Callback for when a column is sorted. Takes the column and ordering as input.
 type OnSortCallback = Rc<dyn Fn(&mut Cursive, &str, Ordering)>;
@@ -20,7 +17,8 @@ type OnSortCallback = Rc<dyn Fn(&mut Cursive, &str, Ordering)>;
 type IndexCallback = Rc<dyn Fn(&mut Cursive, usize, usize)>;
 
 pub struct SpreadsheetView {
-    columns: Vec<ColumnDef>,
+    // Mapping of column key to display name for column.
+    columns: IndexMap<String, String>,
     records: Vec<HashMap<String, String>>,
 
     enabled: bool,
@@ -47,7 +45,7 @@ impl SpreadsheetView {
     /// Creates a new empty `SpreadsheetView` without any columns.
     pub fn new() -> Self {
         Self {
-            columns: Vec::new(),
+            columns: IndexMap::new(),
             records: Vec::new(),
 
             enabled: true,
@@ -61,6 +59,26 @@ impl SpreadsheetView {
             on_sort: None,
             on_submit: None,
             on_select: None,
+        }
+    }
+
+    /// Adds a column to this `SpreadsheetView`. This includes a key value along
+    /// with a title for visual display.
+    pub fn with_column(&mut self, key: String, title: String) -> &mut Self {
+        self.columns.insert(key, title);
+        self
+    }
+
+    /// Sorts the records in this `SpreadsheetView` by the specified column.
+    /// This sort is stable, so multiple calls of this method with different
+    /// columns will co-sort as expected.
+    pub fn sort_rows(&mut self, key: &str, ascending: bool) {
+        // If the key is not in the column list, just no-op.
+        if self.columns.contains_key(key) {
+            self.records.sort_by(|ra, rb| {
+                let o = ra.get(key).cmp(&rb.get(key));
+                if ascending { o } else { o.reverse() }
+            })
         }
     }
 }

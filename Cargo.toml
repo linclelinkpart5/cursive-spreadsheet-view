@@ -9,3 +9,4 @@ description = "A spreadsheet-like view component for `cursive`."
 
 [dependencies]
 cursive = { version = "0.14", default-features = false }
+indexmap = "1.3"
