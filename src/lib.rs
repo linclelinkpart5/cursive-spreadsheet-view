@@ -64,8 +64,18 @@ impl SpreadsheetView {
 
     /// Adds a column to this `SpreadsheetView`. This includes a key value along
     /// with a title for visual display.
-    pub fn with_column(&mut self, key: String, title: String) -> &mut Self {
+    pub fn add_column(&mut self, key: String, title: String) {
         self.columns.insert(key, title);
+    }
+
+    /// Removes a column from this `SpreadsheetView`.
+    pub fn remove_column(&mut self, key: &str) {
+        self.columns.remove(key);
+    }
+
+    /// Chainable variant of `add_column`.
+    pub fn with_column(&mut self, key: String, title: String) -> &mut Self {
+        self.add_column(key, title);
         self
     }
 
