@@ -2,6 +2,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::rc::Rc;
+use std::fmt::Display;
 
 use indexmap::IndexMap;
 
@@ -10,16 +11,18 @@ use cursive::vec::Vec2;
 use cursive::view::ScrollBase;
 
 
+pub type Record<D> = HashMap<String, D>;
+
 /// Callback for when a column is sorted. Takes the column and ordering as input.
 type OnSortCallback = Rc<dyn Fn(&mut Cursive, &str, Ordering)>;
 
 /// Callback taking as argument the row and the index of an element.
 type IndexCallback = Rc<dyn Fn(&mut Cursive, usize, usize)>;
 
-pub struct SpreadsheetView {
+pub struct SpreadsheetView<D: Display + Ord> {
     // Mapping of column key to display name for column.
     columns: IndexMap<String, String>,
-    records: Vec<HashMap<String, String>>,
+    records: Vec<Record<D>>,
 
     enabled: bool,
     scroll_base: ScrollBase,
@@ -35,14 +38,14 @@ pub struct SpreadsheetView {
     on_select: Option<IndexCallback>,
 }
 
-impl Default for SpreadsheetView {
+impl<D: Display + Ord> Default for SpreadsheetView<D> {
     /// Creates a new empty `SpreadsheetView` without any columns.
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl SpreadsheetView {
+impl<D: Display + Ord> SpreadsheetView<D> {
     /// Creates a new empty `SpreadsheetView` without any columns.
     pub fn new() -> Self {
         Self {
@@ -73,6 +76,23 @@ impl SpreadsheetView {
     /// Removes a column from this `SpreadsheetView`.
     pub fn remove_column(&mut self, key: &str) {
         self.columns.remove(key);
+    }
+
+    /// Adds a record to this `SpreadsheetView`. This will be inserted as the
+    /// last record.
+    pub fn add_record(&mut self, record: Record<D>) {
+        self.records.push(record)
+    }
+
+    /// Removes a record from this `SpreadsheetView`.
+    pub fn remove_record(&mut self, index: usize) -> Option<Record<D>> {
+        if index < self.records.len() { Some(self.records.remove(index)) }
+        else { None }
+    }
+
+    /// Clears all records from this `SpreadsheetView`.
+    pub fn clear_records(&mut self) {
+        self.records.clear();
     }
 
     /// Chainable variant of `add_column`.
