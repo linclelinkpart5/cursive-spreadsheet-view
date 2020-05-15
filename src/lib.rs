@@ -26,6 +26,7 @@ pub struct SpreadsheetView {
     last_size: Vec2,
     read_only: bool,
 
+    cursor_pos: (usize, usize),
     selected_cells: HashSet<(usize, usize)>,
     column_select: bool,
 
@@ -53,6 +54,7 @@ impl SpreadsheetView {
             last_size: Vec2::new(0, 0),
             read_only: true,
 
+            cursor_pos: (0, 0),
             selected_cells: HashSet::new(),
             column_select: false,
 
