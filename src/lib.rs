@@ -34,7 +34,7 @@ pub struct SpreadsheetView<D: Display + Ord> {
     last_size: Vec2,
     read_only: bool,
 
-    cursor_pos: (usize, usize),
+    cursor_pos: Option<(usize, usize)>,
     selected_cells: HashSet<(usize, usize)>,
     column_select: bool,
 
@@ -62,7 +62,7 @@ impl<D: Display + Ord> SpreadsheetView<D> {
             last_size: Vec2::new(0, 0),
             read_only: true,
 
-            cursor_pos: (0, 0),
+            cursor_pos: None,
             selected_cells: HashSet::new(),
             column_select: false,
 
@@ -71,6 +71,8 @@ impl<D: Display + Ord> SpreadsheetView<D> {
             on_select: None,
         }
     }
+
+    // COLUMNS -----------------------------------------------------------------
 
     /// Appends a column to this view.
     pub fn push_column(&mut self, column: ColumnDef) {
@@ -100,6 +102,13 @@ impl<D: Display + Ord> SpreadsheetView<D> {
         .pop()
         .map(|(key, title)| ColumnDef { key, title, })
     }
+
+    /// Returns the number of columns in this view.
+    pub fn len_columns(&self) -> usize {
+        self.columns.len()
+    }
+
+    // RECORDS -----------------------------------------------------------------
 
     /// Appends a record to the end of this view.
     pub fn push_record(&mut self, record: Record<D>) {
@@ -155,7 +164,7 @@ impl<D: Display + Ord> SpreadsheetView<D> {
     /// Sorts the records in this view by the specified column.
     /// This sort is stable, so multiple calls of this method with different
     /// columns will co-sort as expected.
-    pub fn sort_rows(&mut self, key: &str, ascending: bool) {
+    pub fn sort_records(&mut self, key: &str, ascending: bool) {
         // If the key is not in the column list, just no-op.
         if self.columns.contains_key(key) {
             self.records.sort_by(|ra, rb| {
@@ -163,6 +172,46 @@ impl<D: Display + Ord> SpreadsheetView<D> {
                 if ascending { o } else { o.reverse() }
             })
         }
+    }
+
+    // CURSOR ------------------------------------------------------------------
+
+    /// Set the position of the cursor, snapping to the bounds of the view.
+    /// If there are no columns or records, sets the cursor to `None`,
+    /// regardless of the inputs.
+    pub fn set_cursor_pos(&mut self, x: usize, y: usize) {
+        let num_cols = self.len_columns();
+        let num_recs = self.len_records();
+
+        self.cursor_pos = match (num_cols, num_recs) {
+            // No way to place a cursor, set to `None`.
+            (0, _) | (_, 0) => None,
+
+            // Bound the new target position to the edges of the view.
+            (lx, ly) => Some((x.min(lx - 1), y.min(ly - 1))),
+        };
+    }
+
+    // CURSIVE-RELATED ---------------------------------------------------------
+
+    /// Disables this view. A disabled view cannot be selected.
+    pub fn disable(&mut self) {
+        self.enabled = false;
+    }
+
+    /// Re-enables this view.
+    pub fn enable(&mut self) {
+        self.enabled = true;
+    }
+
+    /// Enable or disable this view.
+    pub fn set_enabled(&mut self, enabled: bool) {
+        self.enabled = enabled;
+    }
+
+    /// Returns `true` if this view is enabled.
+    pub fn is_enabled(&self) -> bool {
+        self.enabled
     }
 }
 
