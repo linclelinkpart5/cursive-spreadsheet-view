@@ -11,6 +11,11 @@ use cursive::vec::Vec2;
 use cursive::view::ScrollBase;
 
 
+pub struct ColumnDef {
+    pub key: String,
+    pub title: String,
+}
+
 pub type Record<D> = HashMap<String, D>;
 
 /// Callback for when a column is sorted. Takes the column and ordering as input.
@@ -67,21 +72,33 @@ impl<D: Display + Ord> SpreadsheetView<D> {
         }
     }
 
-    /// Adds a column to this view. This includes a key value along with a title
-    /// for visual display.
-    pub fn add_column(&mut self, key: String, title: String) {
-        self.columns.insert(key, title);
+    /// Appends a column to this view.
+    pub fn push_column(&mut self, column: ColumnDef) {
+        self.columns.insert(column.key, column.title);
     }
 
-    /// Chainable version of `add_column`.
-    pub fn with_column(&mut self, key: String, title: String) -> &mut Self {
-        self.add_column(key, title);
+    /// Chainable version of `push_column`.
+    pub fn with_column(&mut self, column: ColumnDef) -> &mut Self {
+        self.push_column(column);
         self
     }
 
-    /// Removes a column from this view.
-    pub fn remove_column(&mut self, key: &str) {
-        self.columns.remove(key);
+    /// Removes and returns the column with the specified key from this view,
+    /// or `None` if there is no such column.
+    pub fn remove_column(&mut self, key: &str) -> Option<ColumnDef> {
+        self
+        .columns
+        .shift_remove_full(key)
+        .map(|(_, key, title)| ColumnDef { key, title, })
+    }
+
+    /// Removes and returns the last column from this view, or `None` if there
+    /// are no columns.
+    pub fn pop_column(&mut self) -> Option<ColumnDef> {
+        self
+        .columns
+        .pop()
+        .map(|(key, title)| ColumnDef { key, title, })
     }
 
     /// Appends a record to the end of this view.
