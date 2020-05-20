@@ -7,13 +7,37 @@ use std::fmt::Display;
 use indexmap::IndexMap;
 
 use cursive::Cursive;
+use cursive::align::HAlign;
 use cursive::vec::Vec2;
 use cursive::view::ScrollBase;
 
 
+#[derive(Copy, Clone)]
+pub enum ColumnWidth {
+    Auto,
+    Min(usize),
+    Max(usize),
+    Bound(usize, usize),
+    Fixed(usize),
+}
+
+impl ColumnWidth {
+    pub fn bounds(&self) -> (usize, Option<usize>) {
+        match *self {
+            Self::Auto => (0, None),
+            Self::Min(min_width) => (min_width, None),
+            Self::Max(max_width) => (0, Some(max_width)),
+            Self::Bound(min_width, delta) => (min_width, Some(min_width + delta)),
+            Self::Fixed(width) => (width, Some(width)),
+        }
+    }
+}
+
 pub struct ColumnDef {
-    pub key: String,
-    pub title: String,
+    title: String,
+    width: ColumnWidth,
+    alignment: HAlign,
+    selected: bool,
 }
 
 pub type Record<D> = HashMap<String, D>;
@@ -25,8 +49,7 @@ type OnSortCallback = Rc<dyn Fn(&mut Cursive, &str, Ordering)>;
 type IndexCallback = Rc<dyn Fn(&mut Cursive, usize, usize)>;
 
 pub struct SpreadsheetView<D: Display + Ord> {
-    // Mapping of column key to display name for column.
-    columns: IndexMap<String, String>,
+    columns: IndexMap<String, ColumnDef>,
     records: Vec<Record<D>>,
 
     enabled: bool,
@@ -75,32 +98,26 @@ impl<D: Display + Ord> SpreadsheetView<D> {
     // COLUMNS -----------------------------------------------------------------
 
     /// Appends a column to this view.
-    pub fn push_column(&mut self, column: ColumnDef) {
-        self.columns.insert(column.key, column.title);
+    pub fn push_column(&mut self, key: String, column_def: ColumnDef) {
+        self.columns.insert(key, column_def);
     }
 
     /// Chainable version of `push_column`.
-    pub fn with_column(&mut self, column: ColumnDef) -> &mut Self {
-        self.push_column(column);
+    pub fn with_column(&mut self, key: String, column_def: ColumnDef) -> &mut Self {
+        self.push_column(key, column_def);
         self
     }
 
     /// Removes and returns the column with the specified key from this view,
     /// or `None` if there is no such column.
     pub fn remove_column(&mut self, key: &str) -> Option<ColumnDef> {
-        self
-        .columns
-        .shift_remove_full(key)
-        .map(|(_, key, title)| ColumnDef { key, title, })
+        self.columns.shift_remove(key)
     }
 
     /// Removes and returns the last column from this view, or `None` if there
     /// are no columns.
     pub fn pop_column(&mut self) -> Option<ColumnDef> {
-        self
-        .columns
-        .pop()
-        .map(|(key, title)| ColumnDef { key, title, })
+        self.columns.pop().map(|(_, v)| v)
     }
 
     /// Returns the number of columns in this view.
